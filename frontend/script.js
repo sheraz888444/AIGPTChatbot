@@ -1,8 +1,14 @@
 document.getElementById('askForm').addEventListener('submit', async function(event) {
     event.preventDefault();
-    const question = document.getElementById('question').value;
+    const questionInput = document.getElementById('question');
+    const submitButton = document.querySelector('#askForm button');
     const responseDiv = document.getElementById('response');
     
+    const question = questionInput.value;
+    
+    // Disable form and show loading state
+    questionInput.disabled = true;
+    submitButton.disabled = true;
     responseDiv.textContent = 'Loading...';
     
     try {
@@ -23,5 +29,9 @@ document.getElementById('askForm').addEventListener('submit', async function(eve
         }
     } catch (error) {
         responseDiv.textContent = 'Error: ' + error.message;
+    } finally {
+        // Re-enable form elements after getting a response or error
+        questionInput.disabled = false;
+        submitButton.disabled = false;
     }
 });

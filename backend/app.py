@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, APIStatusError
 from flask_cors import CORS
 
 load_dotenv()
@@ -23,11 +23,9 @@ def ask():
     try:
         data = request.get_json()
         user_query = data.get("question", "")
+
         if not user_query:
             return jsonify({"error": "No question provided"}), 400
-        
-        # Debug: Print the key being used in the request
-        print(f"Using API key for request starting with: {client.api_key[:8]}...")
         
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -38,10 +36,15 @@ def ask():
         
         result = completion.choices[0].message.content
         return jsonify({"response": result})
-    except KeyError:
-        return jsonify({"error": "OPENAI_API_KEY environment variable not set. Please check your .env file."}), 500
+    except APIStatusError as e:
+        # Handle OpenAI-specific API errors (e.g., 401, 429)
+        print(f"OpenAI API error: {e.status_code} - {e.response.text}")
+        error_message = e.response.json().get("error", {}).get("message", "An unknown API error occurred.")
+        return jsonify({"error": error_message}), e.status_code
     except Exception as e:
+        # Handle other errors (e.g., network issues, invalid JSON)
+        print(f"An error occurred: {e}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
